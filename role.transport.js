@@ -138,7 +138,7 @@ Creep.prototype.doWithdrawTask = function()
     }
 
     //Pick up dropped enegry if passed by
-    let energyInRoom = this.room.find(FIND_DROPPED_ENERGY);
+    let energyInRoom = this.room.find(FIND_DROPPED_RESOURCES);
     for (let i in energyInRoom)
     {
         if (energyInRoom[i] && energyInRoom[i].amount > 500)
@@ -163,7 +163,7 @@ Creep.prototype.doWithdrawTask = function()
 
     if (structure.structureType == STRUCTURE_LINK && structure.transferEnergy(this) == ERR_NOT_IN_RANGE)
         this.travelTo(structure);
-    else if (structure.structureType != STRUCTURE_LINK && structure.structureType && structure.transfer(this, carryType) == ERR_NOT_IN_RANGE)
+    else if (structure.structureType != STRUCTURE_LINK && structure.structureType && this.withdraw(structure, carryType) == ERR_NOT_IN_RANGE)
         this.travelTo(structure);
     else
     {

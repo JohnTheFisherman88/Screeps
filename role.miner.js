@@ -96,7 +96,7 @@ Creep.prototype.getHarvestTask = function()
             continue;
         }
 
-        source.memory = Memory.logisticalStats.sourceData.allSources[id];
+        source.memory = Memory.logisticalStats.allSources[id];
 
         if (!source.memory) continue;
 
@@ -132,7 +132,7 @@ Creep.prototype.getHarvestTask = function()
 Creep.prototype.doHarvestTask = function()
 {
     let source = Game.getObjectById(this.memory.mySource);
-    let memory = Memory.logisticalStats.sourceData.allSources;
+    let memory = Memory.logisticalStats.allSources;
 
     if (this.memory.role != 'Extractor')
     {

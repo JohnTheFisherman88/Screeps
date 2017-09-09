@@ -1,36 +1,28 @@
 module.exports = function(){
 
-	StructureContainer.prototype.initializeMemory = function()
-	{
-		if (Memory.logisticalStats.containerData.allContainers[this.id] != undefined)
-			return;
-		else
-			Memory.logisticalStats.containerData.allContainers[this.id] = new Object();
-
-		Memory.logisticalStats.containerData.allContainers[this.id].numAssigned = 0;
-	}
+	const memory = Memory.logisticalStats.allContainers;
 
 	StructureContainer.prototype.getWeightedEnergy = function()
 	{
 		let energy = this.store[this.getCarryType()];
 
-		if (!Memory.logisticalStats.containerData.allContainers[this.id]) return -2000;
+		if (!memory[this.id]) return -2000;
 
-		Memory.logisticalStats.containerData.allContainers[this.id].energy = energy;
-		energy -= (Memory.logisticalStats.containerData.allContainers[this.id].numAssigned * 1000);
+		memory[this.id].energy = energy;
+		energy -= (memory[this.id].numAssigned * 1000);
 
 		return energy;
 	}
 
 	StructureContainer.prototype.assign = function()
 	{
-		if (Memory.logisticalStats.containerData.allContainers[this.id])
-			Memory.logisticalStats.containerData.allContainers[this.id].numAssigned++;
+		if (memory[this.id])
+			memory[this.id].numAssigned++;
 	}
 
 	StructureContainer.prototype.unassign = function()
 	{
-		if (Memory.logisticalStats.containerData.allContainers[this.id])
-			Memory.logisticalStats.containerData.allContainers[this.id].numAssigned = 0;
+		if (memory[this.id])
+			memory[this.id].numAssigned = 0;
 	}
 };

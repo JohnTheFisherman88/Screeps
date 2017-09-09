@@ -13,6 +13,7 @@ require('prototype.RoomVisual')();
 require('globals')();
 const profiler = require('screeps-profiler');
 const traveler = require('Traveler');
+const Manager = require('manager');
 
 global.STORAGE_ENERGY_THRESHOLD = 100000;
 
@@ -24,9 +25,10 @@ module.exports.loop = function ()
 {
     profiler.wrap(function() 
     {
-        manageMemory();
-        timedEvents();
-        findInvaders();
+        let manager = new Manager();
+        manager.manageMemory();
+        manager.timer();
+        manager.findInvaders();
 
         //Run room methods
         for (let i in Game.rooms)
