@@ -71,7 +71,7 @@ module.exports = function(){
         }
 
         //Set minBuilder
-        if (this.memory.nearbyConstruction)
+        if (this.memory.nearbyConstruction && this.controller.level > 3)
             min.Builder = 1;
         else
             min.Builder = 0;
