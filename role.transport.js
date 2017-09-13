@@ -207,7 +207,7 @@ function findMostFullStructure(structArray, room)
             continue;
         }
 
-        if (Memory.logisticalStats.containerData.allContainers[struct].closestRoom != room.name)
+        if (Memory.logisticalStats.allContainers[struct].closestRoom != room.name)
         {
             delete room.memory.myContainers[struct];
             continue;
@@ -219,7 +219,7 @@ function findMostFullStructure(structArray, room)
         }
 
         carryType = container.getCarryType();
-        container.memory = Memory.logisticalStats.containerData.allContainers[container.id];
+        container.memory = Memory.logisticalStats.allContainers[container.id];
 
         //Dont take minerals from other rooms
         if (carryType != RESOURCE_ENERGY && (ignoreMinerals || container.room.name != room.name))

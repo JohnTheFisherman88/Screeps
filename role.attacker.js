@@ -1,4 +1,4 @@
-let TROOP_INVASION_NUM = 1;
+let TROOP_INVASION_NUM = 4;
 
 module.exports = {
 

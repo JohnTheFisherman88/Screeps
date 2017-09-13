@@ -17,9 +17,6 @@ const Manager = require('manager');
 
 global.STORAGE_ENERGY_THRESHOLD = 100000;
 
-/* Automatic roads to controller */
-/* Miners can build/repair and harvest at the same time */
-
 profiler.enable();
 module.exports.loop = function () 
 {

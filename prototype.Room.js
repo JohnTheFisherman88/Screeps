@@ -22,6 +22,7 @@ module.exports = function(){
             }
         }
 
+        //New rooms get high level creeps from nearby rooms
         if ((!this.memory.spawn || !Game.getObjectById(this.memory.spawn)))
         {
             if (!this.memory.helperRoom)
@@ -71,8 +72,8 @@ module.exports = function(){
         }
 
         //Set minBuilder
-        if (this.memory.nearbyConstruction && this.controller.level > 3)
-            min.Builder = 1;
+        if (this.memory.nearbyConstruction)
+            min.Builder = 3;
         else
             min.Builder = 0;
 
@@ -114,7 +115,7 @@ module.exports = function(){
             max.Miner = 2;
             max.Claimer = 0;
             
-            if (this.controller.level == 1 || min.Builder > 0 || min.Transport == 0)
+            if (this.controller.level == 1 || (min.Builder > 0 && min.Transport == 0))
                 min.Upgrader = 1;
             else
                 min.Upgrader = 5;
@@ -123,7 +124,11 @@ module.exports = function(){
         {
             max.Miner = 4;
             max.Claimer = 1;
-            min.Upgrader = 3;
+
+            if (min.Builder > 0)
+                min.Upgrader = 1;
+            else
+                min.Upgrader = 3;
         }
     }
 
@@ -215,6 +220,10 @@ module.exports = function(){
 
     Room.prototype.spawnCreeps = function(spawnArray, min, count)
     {
+        //Stall spawning on a new room if source calculations havent been made
+        if (min.Miner == 0)
+            return
+
         let spawn = undefined;
 
         for (let i in spawnArray)
@@ -405,9 +414,48 @@ module.exports = function(){
     {
         let room = this;
 
-        room.memory.creepMinimum = new Object();
-        room.memory.creepCount = new Object();
-        room.memory.creepMaximum = new Object();
+        if (!this.memory.creepMinimum)
+        {
+            this.memory.creepMinimum = {};
+
+            room.memory.creepMinimum.Defender = 0;
+            room.memory.creepMinimum.Miner = 0;
+            room.memory.creepMinimum.Transport = 0;
+            room.memory.creepMinimum.Claimer = 0;
+            room.memory.creepMinimum.AttackClaimer = 0;
+            room.memory.creepMinimum.Attacker = 0;
+            room.memory.creepMinimum.Extractor = 0;
+            room.memory.creepMinimum.Linker = 0;
+            room.memory.creepMinimum.Fixer = 0;
+            room.memory.creepMinimum.Waller = 0;
+            room.memory.creepMinimum.Upgrader = 0;
+            room.memory.creepMinimum.Builder = 0;
+            room.memory.creepMinimum.Total = 0;
+        }
+
+        if (!this.memory.creepCount)
+        {
+            this.memory.creepCount = {};
+
+            room.memory.creepCount.Defender = 0;
+            room.memory.creepCount.Miner = 0;
+            room.memory.creepCount.Transport = 0;
+            room.memory.creepCount.Claimer = 0;
+            room.memory.creepCount.AttackClaimer = 0;
+            room.memory.creepCount.Attacker = 0;
+            room.memory.creepCount.Extractor = 0;
+            room.memory.creepCount.Linker = 0;
+            room.memory.creepCount.Fixer = 0;
+            room.memory.creepCount.Waller = 0;
+            room.memory.creepCount.Upgrader = 0;
+            room.memory.creepCount.Builder = 0;
+            room.memory.creepCount.Total = 0;
+        }
+
+        if (!this.memory.creepMaximum)
+        {
+            this.memory.creepMaximum = {};
+        }
 
         room.memory.mySources = new Object();
         room.memory.myContainers = new Object();
@@ -426,42 +474,6 @@ module.exports = function(){
         room.memory.nearbyConstruction = false;
         room.memory.nearbyInvader = false;
         room.memory.nearbyAttackSite = false;
-
-        room.memory.creepMinimum.Defender = 0;
-        room.memory.creepMinimum.Miner = 0;
-        room.memory.creepMinimum.Transport = 0;
-        room.memory.creepMinimum.Claimer = 0;
-        room.memory.creepMinimum.AttackClaimer = 0;
-        room.memory.creepMinimum.Attacker = 0;
-        room.memory.creepMinimum.Extractor = 0;
-        room.memory.creepMinimum.Linker = 0;
-        room.memory.creepMinimum.Fixer = 0;
-        room.memory.creepMinimum.Waller = 0;
-        room.memory.creepMinimum.Upgrader = 0;
-        room.memory.creepMinimum.Builder = 0;
-        room.memory.creepMinimum.Total = 0;
-
-        room.memory.creepMaximum.Miner = 2;
-        room.memory.creepMaximum.Claimer = 0;
-
-        room.memory.creepCount.Defender = 0;
-        room.memory.creepCount.Miner = 0;
-        room.memory.creepCount.Transport = 0;
-        room.memory.creepCount.Claimer = 0;
-        room.memory.creepCount.AttackClaimer = 0;
-        room.memory.creepCount.Attacker = 0;
-        room.memory.creepCount.Extractor = 0;
-        room.memory.creepCount.Linker = 0;
-        room.memory.creepCount.Fixer = 0;
-        room.memory.creepCount.Waller = 0;
-        room.memory.creepCount.Upgrader = 0;
-        room.memory.creepCount.Builder = 0;
-        room.memory.creepCount.Total = 0;
-
-        //Force a single run of assignSources so that a miner will be the first creep spawned
-        assignSources();
-        assignContainers();
-        assignFlags();
     }
 
 };

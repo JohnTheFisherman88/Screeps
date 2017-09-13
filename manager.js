@@ -179,12 +179,18 @@ class Manager
                     parts += (enemy[i].getActiveBodyparts(HEAL) * 2);
                 }
                 Memory.empire.invasionRooms[room.name] = parts;
+
+                if (enemy[i].owner.username != 'Invader')
+                {
+                    room.controller.activateSafeMode();
+                }
             }
         }
     }
 
     manageMemory()
     {        
+        //Clear unowned rooms from memory
         for (let i in Memory.rooms)
         {
             if (!Game.rooms[i] || (Game.rooms[i].controller && !Game.rooms[i].controller.my))
