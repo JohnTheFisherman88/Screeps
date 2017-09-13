@@ -115,10 +115,12 @@ module.exports = function(){
             max.Miner = 2;
             max.Claimer = 0;
             
-            if (this.controller.level == 1 || (min.Builder > 0 && min.Transport == 0))
+            if (this.controller.level == 1) //Get to level 2 quickly, dial back upgraders if extensions need to be built
                 min.Upgrader = 1;
-            else
+            else if (min.Transport > 0 && min.Builder == 0) //Once containers are up, start upgrading fast
                 min.Upgrader = 5;
+            else //Stall upgrades if we don't have our containers up yet
+                min.Upgrader = 0;
         }
         else // Level 4
         {
