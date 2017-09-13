@@ -138,25 +138,29 @@ Creep.prototype.doWithdrawTask = function()
     }
 
     //Pick up dropped enegry if passed by
-    let energyInRoom = this.room.find(FIND_DROPPED_RESOURCES);
-    for (let i in energyInRoom)
+    let pickupEnergy = false;
+    if (pickupEnergy)
     {
-        if (energyInRoom[i] && energyInRoom[i].amount > 500)
+        let energyInRoom = this.room.find(FIND_DROPPED_RESOURCES);
+        for (let i in energyInRoom)
         {
-            if (this.pickup(energyInRoom[i]) == ERR_NOT_IN_RANGE)
-                this.moveTo(energyInRoom[i]);
-            else
+            if (energyInRoom[i] && energyInRoom[i].amount > 500)
             {
-                if (_.sum(this.carry) + energyInRoom[i].amount >= Math.ceil(this.carryCapacity*.75))
+                if (this.pickup(energyInRoom[i]) == ERR_NOT_IN_RANGE)
+                    this.moveTo(energyInRoom[i]);
+                else
                 {
-                    if (structure.structureType == STRUCTURE_CONTAINER)
-                        structure.unassign()
+                    if (_.sum(this.carry) + energyInRoom[i].amount >= Math.ceil(this.carryCapacity*.75))
+                    {
+                        if (structure.structureType == STRUCTURE_CONTAINER)
+                            structure.unassign()
 
-                    delete this.memory.withdrawTask;
+                        delete this.memory.withdrawTask;
+                    }
                 }
-            }
 
-            return;
+                return;
+            }
         }
     }
 

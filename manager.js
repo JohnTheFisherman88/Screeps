@@ -1,10 +1,22 @@
-class Manager
+"use strict";
+
+module.exports = class Manager
 {
     constructor()
     {
         if (!Memory.logisticalStats)
         {
             Memory.logisticalStats = {};
+        }
+        
+        if (!Memory.logisticalStats.allContainers)
+        {
+            Memory.logisticalStats.allContainers = {};
+        }
+        
+        if (!Memory.logisticalStats.allSources)
+        {
+            Memory.logisticalStats.allSources = {};
         }
 
         this.memory = Memory.logisticalStats;
@@ -216,6 +228,8 @@ class Manager
 
     timer()
     {
+        let time = Game.time;
+        
         //WallMax 
         if (time % 31 == 0)
         {
@@ -265,23 +279,28 @@ class Manager
             }
 
         }
+        
+        if (time % 2 == 0)
+        {
+            this.findConstructions();
+        }
 
         //Container Assignment
         if (time % 25 == 0)
         {
-            assignContainers();
+            this.assignContainers();
         }
 
         //Source assignment
         if (time % 26 == 0)
         {
-            assignSources();
+            this.assignSources();
         }
 
         //Flag assignment
         if (time % 27 == 0)
         {
-            assignFlags();
+            this.assignFlags();
         }
 
         //Create Roads
@@ -382,5 +401,3 @@ class Manager
         }
     }
 }
-
-exports.Manager = Manager;
