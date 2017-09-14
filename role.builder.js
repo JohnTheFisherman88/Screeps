@@ -23,19 +23,20 @@ Creep.prototype.getConstructionTask = function()
     let creep = this;
     let room = Game.rooms[creep.memory.myRoom.name];
 
-    let construction;
-    let constructions = room.find(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_SPAWN});
+    let construction = null;
+    let constructions = room.find(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_SPAWN})
 
     if (constructions.length == 0)
     {
         construction = creep.pos.findClosestByPath(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_EXTENSION});
     }
-    if (constructions.length == 0)
-    {
-        construction = creep.pos.findClosestConstructionSite(_.filter(Game.constructionSites, (s) => s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_RAMPART || s.structureType == STRUCTURE_STORAGE));
-    }
     else
         construction = constructions[0];
+    
+    if (!construction)
+    {
+        construction = creep.pos.findClosestConstructionSite(_.filter(Game.constructionSites, (s) =>  s.structureType == STRUCTURE_RAMPART || s.structureType == STRUCTURE_STORAGE));
+    }
 
     if (!construction) 
         construction = creep.pos.findClosestConstructionSite(Game.constructionSites);
