@@ -72,8 +72,13 @@ module.exports = function(){
         }
 
         //Set minBuilder
-        if (this.memory.nearbyConstruction && this.controller.level > 2)
-            min.Builder = (this.controller.level >= 4) ? 3 : 1;
+        if (this.memory.nearbyConstruction)
+        {
+            if (this.memory.nearbyImportantConstruction)
+                min.Builder = 3;
+            else
+                min.Builder = 1;
+        }
         else
             min.Builder = 0;
 
@@ -120,9 +125,9 @@ module.exports = function(){
             
             if (this.controller.level == 1) //Get to level 2 quickly, dial back upgraders if extensions need to be built
                 min.Upgrader = 1;
-            else if (min.Transport > 0 && min.Builder == 0) //Once containers are up, start upgrading fast
+            else if (min.Transport > 0 && min.Builder <= 1) //Once containers are up, start upgrading fast
                 min.Upgrader = 5;
-            else //Stall upgrades if we don't have our containers up yet
+            else //Stall upgrades if we don't have our containers or extensions up yet
                 min.Upgrader = 0;
             
         }
@@ -131,7 +136,7 @@ module.exports = function(){
             max.Miner = 4;
             max.Claimer = 1;
             
-            if (min.Builder > 0)
+            if (min.Builder > 1)
                 min.Upgrader = 1;
             else
                 min.Upgrader = 3;
@@ -350,47 +355,72 @@ module.exports = function(){
     {
         if (Game.constructionSites >= 80) return;
 
-        if (this.controller.level <= 3) return;
+        //Wait for 2 containers to go up before building roads
+        if (Object.keys(this.memory.myContainers).length < 2) return;
 
         let start = Game.getObjectById(this.memory.spawn);
         if (!start) return;
+
+        let roomCallback = function(roomName)
+        {
+            let room = Game.rooms[roomName];
+            if (!room) return;
+            let costs = new PathFinder.CostMatrix;
+
+            room.find(FIND_STRUCTURES).forEach(
+                function (structure) 
+                { 
+                    if (structure.structureType != STRUCTURE_RAMPART && structure.structureType != STRUCTURE_SPAWN)
+                    {
+                        costs.set(structure.pos.x, structure.pos.y, 255);
+                    }   
+
+                    if (structure.structureType == STRUCTURE_ROAD)
+                        costs.set(structure.pos.x, structure.pos.y, 1);                   
+                }
+            );
+
+            room.find(FIND_CONSTRUCTION_SITES).forEach(
+                function (site) 
+                { 
+                    if (site.structureType != STRUCTURE_CONTAINER && site.structureType != STRUCTURE_RAMPART)
+                    {
+                        costs.set(site.pos.x, site.pos.y, 255);
+                    }
+
+                    if (site.structureType == STRUCTURE_ROAD)
+                        costs.set(site.pos.x, site.pos.y, 1);
+                }
+            );
+
+            return costs;
+        };
 
         for (let i in this.memory.myContainers)
         {
             let end = Game.getObjectById(i);
             if (!end) continue;
 
-            let ret = PathFinder.search(start.pos, { pos : end.pos, range : 1 }, { swampCost : 3, plainCost : 2, maxOps : 16000, roomCallback : 
-                function(roomName) {
-                    let room = Game.rooms[roomName];
-                    if (!room) return;
-                    let costs = new PathFinder.CostMatrix;
+            let ret = PathFinder.search(start.pos, { pos : end.pos, range : 1 }, { swampCost : 3, plainCost : 2, maxOps : 16000, roomCallback});
 
-                    room.find(FIND_STRUCTURES).forEach(
-                        function (structure) 
-                        { 
-                            if (structure.structureType != STRUCTURE_RAMPART && structure.structureType != STRUCTURE_SPAWN)
-                                costs.set(structure.pos.x, structure.pos.y, 255);
-
-                            if (structure.structureType == STRUCTURE_ROAD)
-                                costs.set(structure.pos.x, structure.pos.y, 1);
-                        }
-                    );
-
-                    room.find(FIND_CONSTRUCTION_SITES).forEach(
-                        function (site) 
-                        { 
-                            if (site.structureType != STRUCTURE_CONTAINER && site.structureType != STRUCTURE_RAMPART)
-                                costs.set(site.pos.x, site.pos.y, 255);
-
-                            if (site.structureType == STRUCTURE_ROAD)
-                                costs.set(site.pos.x, site.pos.y, 1);
-                        }
-                    );
-
-                    return costs;
+            if (!ret.incomplete)
+            {
+                for (let position in ret.path)
+                {
+                    if (Game.rooms[ret.path[position].roomName])
+                    {
+                        ret.path[position].createConstructionSite(STRUCTURE_ROAD);
+                    }
                 }
-            });
+            }
+        }
+
+        if (toController)
+        {
+            let end = this.controller;
+            if (!end) return;
+
+            let ret = PathFinder.search(start.pos, { pos : end.pos, range : 3 }, { swampCost : 3, plainCost : 2, maxOps : 16000, roomCallback});
 
             if (!ret.incomplete)
             {

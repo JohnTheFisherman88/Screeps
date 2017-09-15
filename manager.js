@@ -166,7 +166,7 @@ module.exports = class Manager
             {
                 if (room.controller.owner != "JohnTheFisherman")
                     continue;
-                
+
                 if (!room.controller.reservation || room.controller.reservation.username != "JohnTheFisherman")
                 {
                     if (room.find(FIND_FLAGS, {filter : (f) => f.color = COLOR_GREEN}).length == 0)
@@ -337,7 +337,17 @@ module.exports = class Manager
                     var construction = spawn.pos.findClosestConstructionSite(_.filter(Game.constructionSites, (s) => s.structureType != STRUCTURE_CONTAINER));
 
                 if (construction != undefined)
+                {
                     Game.rooms[i].memory.nearbyConstruction = true;
+
+                    if (spawn.room.find(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_STORAGE}).length > 0)
+                    {
+                        Game.rooms[i].memory.nearbyImportantConstruction = true;
+                    }
+                    else
+                        Game.rooms[i].memory.nearbyImportantConstruction = false;
+                        
+                }
                 else
                     Game.rooms[i].memory.nearbyConstruction = false;
             }
