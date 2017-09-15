@@ -164,6 +164,9 @@ module.exports = class Manager
             //Skip if we don't own the controller and it either isn't reserved, or is reserved by someone who isnt me
             if (!room.controller.my)
             {
+                if (room.controller.owner != "JohnTheFisherman")
+                    continue;
+                
                 if (!room.controller.reservation || room.controller.reservation.username != "JohnTheFisherman")
                 {
                     if (room.find(FIND_FLAGS, {filter : (f) => f.color = COLOR_GREEN}).length == 0)
@@ -369,7 +372,7 @@ module.exports = class Manager
                 
                 if (Game.flags.attackLocation && Game.flags.attackBase)
                 {
-                    if (Game.rooms[i].controller.level < 7) continue;
+                    if (Game.rooms[i].controller.level < 4) continue;
                         
                     let ret = Game.map.findRoute(Game.rooms[i], Game.flags.attackLocation.room);
 
@@ -409,4 +412,53 @@ module.exports = class Manager
             }
         }
     }
+
+    createRoadBetweenFlags()
+    {
+        let start = Game.flags['start'];
+        let end = Game.flags['end'];
+
+        if (!start || !end || !start.room || !end.room) return;
+
+        let ret = PathFinder.search(start.pos, end.pos, { swampCost : 3, plainCost : 2, maxOps : 16000, roomCallback : 
+            function(roomName) {
+                let room = Game.rooms[roomName];
+                if (!room) return;
+                let costs = new PathFinder.CostMatrix;
+
+                room.find(FIND_STRUCTURES).forEach(
+                    function (structure) 
+                    { 
+                        if (structure.structureType != STRUCTURE_CONTAINER && structure.structureType != STRUCTURE_RAMPART)
+                            costs.set(structure.pos.x, structure.pos.y, 255);
+
+                        if (structure.structureType == STRUCTURE_ROAD)
+                            costs.set(structure.pos.x, structure.pos.y, 1);
+                    }
+                );
+
+                room.find(FIND_CONSTRUCTION_SITES).forEach(
+                    function (site) 
+                    { 
+                        if (site.structureType != STRUCTURE_CONTAINER && site.structureType != STRUCTURE_RAMPART)
+                            costs.set(site.pos.x, site.pos.y, 255);
+
+                        if (site.structureType == STRUCTURE_ROAD)
+                            costs.set(site.pos.x, site.pos.y, 1);
+                    }
+                );
+
+                return costs;
+            }
+        });
+
+        if (!ret.incomplete)
+        {
+            for (let position in ret.path)
+            {
+                ret.path[position].createConstructionSite(STRUCTURE_ROAD);
+            }
+        }
+    };
 }
+

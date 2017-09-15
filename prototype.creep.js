@@ -159,14 +159,32 @@ module.exports = function(room){
         let wounded = creep.pos.findInRange(FIND_MY_CREEPS, 50, {filter : (c) => c.hits < c.hitsMax});
 
         if (wounded.length > 0)
-            target = wounded[0];
+        {
+            for (let i in wounded)
+            {
+                if (wounded[i].memory.role == 'Healer')
+                {
+                    target = wounded[i];
+                    break;
+                }
+            }
+
+            if (target == null)
+                target = wounded[0];
+        }
         else if (wounded.length == 0)
         {
             target = creep.pos.findClosestByPath(FIND_MY_CREEPS, {filter : (c) => c.hits < c.hitsMax});
         }
 
         if (target)
-            creep.rangedHeal(target);
+        {
+            if (creep.heal(target) == ERR_NOT_IN_RANGE)
+            {
+                creep.rangedHeal(target);
+            }
+            creep.moveTo(target);
+        }
     }
 
     Creep.prototype.setInventoryStatus = function()
@@ -266,6 +284,8 @@ module.exports = function(room){
             require('role.linker').run(this);
         else if (this.memory.role == 'Attacker')
             require('role.attacker').run(this);
+        else if (this.memory.role == 'Healer')
+            require('role.healer').run(this);
         else if (this.memory.role == 'Defender')
             require('role.defender').run(this);
         else if (this.memory.role == 'Claimer')

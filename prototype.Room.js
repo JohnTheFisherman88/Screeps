@@ -1,4 +1,4 @@
-var TRANSPORT_FACTOR = [2, 2, 2, 1.8, 1.5, 1.2, .7, .7];
+var TRANSPORT_FACTOR = [2, 1.5, 1.5, 1.5, 1.5, 1.2, .7, .7];
 
 module.exports = function(){
 
@@ -73,7 +73,7 @@ module.exports = function(){
 
         //Set minBuilder
         if (this.memory.nearbyConstruction && this.controller.level > 2)
-            min.Builder = 2;
+            min.Builder = (this.controller.level >= 4) ? 3 : 1;
         else
             min.Builder = 0;
 
@@ -107,7 +107,7 @@ module.exports = function(){
             min.Transport = Math.floor(min.Transport);
 
         min.Total = (min.Defender + min.Miner + min.Transport + min.Extractor + min.Linker + min.Fixer 
-            + min.Waller + min.Upgrader + min.Builder + min.Claimer + min.Attacker);
+            + min.Waller + min.Upgrader + min.Builder + min.Claimer + min.Attacker + min.Healer);
     }
 
     Room.prototype.setCreepMinimumsWeak = function(min, max)
@@ -120,7 +120,7 @@ module.exports = function(){
             
             if (this.controller.level == 1) //Get to level 2 quickly, dial back upgraders if extensions need to be built
                 min.Upgrader = 1;
-            else if (min.Transport > 0 && min.Upgrader == 0) //Once containers are up, start upgrading fast
+            else if (min.Transport > 0 && min.Builder == 0) //Once containers are up, start upgrading fast
                 min.Upgrader = 5;
             else //Stall upgrades if we don't have our containers up yet
                 min.Upgrader = 0;
@@ -135,6 +135,19 @@ module.exports = function(){
                 min.Upgrader = 1;
             else
                 min.Upgrader = 3;
+
+            if (Object.keys(Game.spawns).length == 1)
+            {
+                //Offensive attacker setting
+                if (this.memory.nearbyAttackSite)
+                {
+                    min.Attacker = 3;
+                }
+                else
+                {
+                    min.Attacker = 0;
+                }
+            }
         }
     }
 
@@ -210,6 +223,7 @@ module.exports = function(){
         count.Transport = _.sum(Game.creeps, (c) => c.memory.role == 'Transport' && c.memory.linker != true && c.memory.myRoom.name == this.name);
         count.Linker = _.sum(Game.creeps, (c) => c.memory.role == 'Linker' && c.memory.myRoom.name == this.name);
         count.Attacker = _.sum(Game.creeps, (c) => c.memory.role == 'Attacker' && c.memory.myRoom.name == this.name);
+        count.Healer = _.sum(Game.creeps, (c) => c.memory.role == 'Healer' && c.memory.myRoom.name == this.name);
         count.Defender = _.sum(Game.creeps, (c) => c.memory.role == 'Defender' && c.memory.myRoom.name == this.name);
         count.Claimer = _.sum(Game.creeps, (c) => c.memory.role == 'Claimer' && c.memory.myRoom.name == this.name);
         count.AttackClaimer = _.sum(Game.creeps, (c) => c.memory.role == 'AttackClaimer' && c.memory.myRoom.name == this.name);
@@ -488,6 +502,7 @@ module.exports = function(){
             room.memory.creepMinimum.Claimer = 0;
             room.memory.creepMinimum.AttackClaimer = 0;
             room.memory.creepMinimum.Attacker = 0;
+            room.memory.creepMinimum.Healer = 0;
             room.memory.creepMinimum.Extractor = 0;
             room.memory.creepMinimum.Linker = 0;
             room.memory.creepMinimum.Fixer = 0;

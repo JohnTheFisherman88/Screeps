@@ -1,4 +1,6 @@
 let TROOP_INVASION_NUM = 4;
+const hitAndRun = true;
+const drainTower = true;
 
 module.exports = {
 
@@ -8,8 +10,26 @@ module.exports = {
 
         if (creep.garrison()) return;     
 
-        if (creep.hits < creep.hitsMax)
+        if (creep.hits < creep.hitsMax || hitAndRun)
         {
+            if (hitAndRun)
+            {
+                let towers = creep.room.find(FIND_HOSTILE_STRUCTURES, {filter : (s) => s.structureType == STRUCTURE_TOWER});
+                var fullTower = false;
+
+                for (let i in towers)
+                {
+                    if (towers[i].energy > 200)
+                        fullTower = true;
+                }
+
+                if (fullTower)
+                {
+                    if (this.pos.findInRange(Game.flags.attackBase, 5).length == 0)
+                        this.travelTo(Game.flags.attackBase, {ignoreCreeps : false});
+                }
+            }
+
             creep.heal(creep);
         }
         else
@@ -17,6 +37,11 @@ module.exports = {
             if (!creep.memory.invasionTask)
                 creep.findTarget();
 
+            if (drainTower)
+            {
+                creep.moveTo(Game.flags['attackLocation']);
+                return;
+            }
             creep.attackTarget();
         }
     }
@@ -75,14 +100,14 @@ Creep.prototype.attackTarget = function()
     this.moveTo(enemy);
 }
 
-//Returns true if creeps are situated at the garrison. False if moving to attack location
+//Returns true if creeps are situated at the garrison. False if at attack location
 Creep.prototype.garrison = function()
 {
     if (Game.flags.attackLocation && Game.flags.attackBase)
     {
         if (Game.flags.attackBase.room)
         {
-            let Garrison = Game.flags.attackBase.pos.findInRange(FIND_MY_CREEPS, 5, {filter : (c) => c.memory.role == 'Attacker'});
+            let Garrison = Game.flags.attackBase.pos.findInRange(FIND_MY_CREEPS, 5, {filter : (c) => c.memory.role == 'Attacker' || c.memory.role == 'Healer'});
 
             if (Garrison.length >= TROOP_INVASION_NUM)
             {

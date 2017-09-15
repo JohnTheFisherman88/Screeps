@@ -24,7 +24,7 @@ module.exports = function() {
 			}
 		}
 		
-		source.memory = Memory.logisticalStats.sourceData.allSources[this.id];
+		source.memory = Memory.logisticalStats.allSources[this.id];
 
 		if (source.memory && source.memory.closestRoom)
 		{
@@ -49,11 +49,6 @@ module.exports = function() {
 		}
 
 		return this.pos.findClosestSpawn(goals);
-	}
-
-	Source.prototype.memory = function()
-	{
-		return Memory.logisticalStats.sourceData.allSources[this.id];
 	}
 
 };
