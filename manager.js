@@ -312,6 +312,15 @@ module.exports = class Manager
             }
         }
 
+        //Create Buildings
+        if (time % 51 == 0)
+        {
+            for (let i in Memory.rooms)
+            {
+                Game.rooms[i].createBuildings();
+            }
+        }
+
         //Set Builder Flag
         if (time % 15 == 0)
         {
@@ -322,9 +331,9 @@ module.exports = class Manager
                 if (!spawn) spawn = Game.rooms[i].controller;
 
                 if (spawn)
-                    var construction = spawn.pos.findClosestConstructionSite(Game.constructionSites, (s) => s.structureType != STRUCTURE_CONTAINER);
+                    var construction = spawn.pos.findClosestConstructionSite(_.filter(Game.constructionSites, (s) => s.structureType != STRUCTURE_CONTAINER));
 
-                if (construction)
+                if (construction != undefined)
                     Game.rooms[i].memory.nearbyConstruction = true;
                 else
                     Game.rooms[i].memory.nearbyConstruction = false;

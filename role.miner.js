@@ -23,7 +23,7 @@ module.exports = {
             } 
 
             //Find nearest container or storage within a range of 1
-            let structures = source.pos.findInRange(FIND_STRUCTURES, 1,
+            let structures = source.pos.findInRange(FIND_STRUCTURES, 2,
                 {filter : (s) => s.structureType == STRUCTURE_CONTAINER});
 
             let container = structures[0];
@@ -31,11 +31,13 @@ module.exports = {
             //If we don't have any transports alive, transport the energy yourself, to spawn
             if ((_.sum(Game.creeps, (c) => c.memory.role == 'Transport' && c.memory.myRoom.name == room.name) <= 0
                 || (structures.length == 0 && room.memory.creepCount.Miner < room.memory.creepMinimum.Miner))
-                && room.energyAvailable < 300)
+                && room.energyAvailable < room.energyCapacityAvailable)
             {
-                if (creep.transfer(spawn, carryType) == ERR_NOT_IN_RANGE)
-                    creep.moveTo(spawn);
-
+                let structure = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {filter : (s) => s.energy < s.energyCapacity
+                    && (s.structureType == STRUCTURE_SPAWN || s.structureType == STRUCTURE_EXTENSION)});
+                    
+                if (creep.transfer(structure, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE)
+                    creep.travelTo(structure);
                 return;
             }
 
@@ -65,6 +67,33 @@ module.exports = {
         
         if (creep.memory.invFull == false)
         {
+            if (room.controller.level <= 2 && Object.keys(room.memory.myContainers).length < 2)
+            {
+                if (!creep.memory.mySource)
+                {
+                    let sources = room.find(FIND_SOURCES);
+                    
+                    for (let i in sources)
+                    {
+                        if (sources[i].pos.findInRange(FIND_MY_CREEPS, 1).length < 4)
+                        {
+                            creep.memory.mySource = sources[i].id;
+                            break;
+                        }
+                    }
+                }
+                
+                let source = Game.getObjectById(creep.memory.mySource);
+                    
+                if (creep.harvest(source) == ERR_NOT_IN_RANGE)
+                {
+                    if (creep.moveTo(source) == ERR_NO_PATH)
+                        creep.memory.mySource = null;
+                }
+                
+                return;
+            }
+            
             if (!creep.memory.mySource)
                 creep.getHarvestTask();
 
@@ -96,7 +125,7 @@ Creep.prototype.getHarvestTask = function()
             continue;
         }
 
-        source.memory = Memory.logisticalStats.allSources[id];
+        source.memory = Memory.logisticalStats.sourceData.allSources[id];
 
         if (!source.memory) continue;
 
@@ -132,7 +161,7 @@ Creep.prototype.getHarvestTask = function()
 Creep.prototype.doHarvestTask = function()
 {
     let source = Game.getObjectById(this.memory.mySource);
-    let memory = Memory.logisticalStats.allSources;
+    let memory = Memory.logisticalStats.sourceData.allSources;
 
     if (this.memory.role != 'Extractor')
     {
@@ -168,14 +197,26 @@ Creep.prototype.doHarvestTask = function()
 Creep.prototype.doWork = function(structures)
 {
     let creep = this;
+    let construction = null;
+    let room = Game.rooms[creep.memory.myRoom.name];
+    
+    if (room.controller.level <= 2 && Object.keys(room.memory.myContainers).length < 2)
+    {
+        structures = [];
+        construction = this.pos.findClosestByPath(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_EXTENSION});
+    }
 
     if (structures.length == 0)
     {
-        //Find a container or storage construction site
-        let constructions = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 5,
+        if (construction == null)
+        {
+            //Find a container or storage construction site
+            let constructions = creep.pos.findInRange(FIND_CONSTRUCTION_SITES, 5,
             { filter : (s) =>  s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_LINK});
 
-        let construction = constructions[0];
+            construction = constructions[0];
+        }
+
 
         //If there is no container and also no container construction site, create one
         if (construction == null)

@@ -72,7 +72,7 @@ module.exports = function(){
         }
 
         //Set minBuilder
-        if (this.memory.nearbyConstruction)
+        if (this.memory.nearbyConstruction && this.controller.level > 2)
             min.Builder = 2;
         else
             min.Builder = 0;
@@ -87,9 +87,12 @@ module.exports = function(){
         if (this.find(FIND_STRUCTURES, {filter : (s) => s.structureType == STRUCTURE_WALL}).length > 0 && this.controller.level > 3)
             min.Waller = 1;
 
-        min.Miner = Object.keys(this.memory.mySources).length;
+        min.Miner = (Object.keys(this.memory.myContainers).length >= 2) ? Object.keys(this.memory.mySources).length : Object.keys(this.memory.mySources).length*4;
         min.Claimer = (Object.keys(this.memory.myFlags)).length;
         min.Transport = Object.keys(this.memory.myContainers).length * TRANSPORT_FACTOR[this.controller.level-1];
+        
+        if (Object.keys(this.memory.myContainers).length < 2)
+            min.Transport = 0;
         
         //Tweak transport number based on container fullness situation
         if (this.memory.containerStats.containerLongAverage < 500)
@@ -117,16 +120,17 @@ module.exports = function(){
             
             if (this.controller.level == 1) //Get to level 2 quickly, dial back upgraders if extensions need to be built
                 min.Upgrader = 1;
-            else if (min.Transport > 0 && min.Builder == 0) //Once containers are up, start upgrading fast
+            else if (min.Transport > 0 && min.Upgrader == 0) //Once containers are up, start upgrading fast
                 min.Upgrader = 5;
             else //Stall upgrades if we don't have our containers up yet
                 min.Upgrader = 0;
+            
         }
         else // Level 4
         {
             max.Miner = 4;
             max.Claimer = 1;
-
+            
             if (min.Builder > 0)
                 min.Upgrader = 1;
             else
@@ -410,6 +414,64 @@ module.exports = function(){
             spawn.makeCreep('Upgrader', this);
         else if (count['Builder'] < min['Builder'])
             spawn.makeCreep('Builder', this);
+    }
+
+    //Place initial flag at aboslute top left of selection
+    Room.prototype.createBuildings = function()
+    {
+        let flags = this.find(FIND_FLAGS);
+        
+        for (let i in flags)
+        {
+            let flag = flags[i];
+            let constructionArray = null;
+
+            if (flag.color == COLOR_YELLOW)
+            {
+                if (flag.secondaryColor == COLOR_YELLOW)
+                {
+                    constructionArray = [
+                    [0,0,0,0,2,0,0],
+                    [0,0,0,2,2,1,0],
+                    [0,0,2,2,1,2,2],
+                    [0,2,2,1,2,2,0],
+                    [2,2,1,2,2,0,0],
+                    [2,1,2,2,0,0,0],
+                    [1,2,2,0,0,0,0],
+                    ]
+                }
+                else if (flag.secondaryColor == COLOR_WHITE)
+                {
+                    if (flag.pos.createConstructionSite(STRUCTURE_TOWER) == OK)
+                        flag.remove()
+                }
+                else if (flag.secondaryColor == COLOR_GREY)
+                {
+                    if (flag.pos.createConstructionSite(STRUCTURE_STORAGE) == OK)
+                        flag.remove()
+                }
+                else if (flag.secondaryColor == COLOR_BROWN)
+                {
+                    if (flag.pos.createConstructionSite(STRUCTURE_TERMINAL) == OK)
+                        flag.remove();
+                }
+                
+                if (constructionArray != null)
+                {
+                    //Since (y,x) starts in the top right corner of the matrix, we adjust the y variable to start at the bottom left corner
+                    for (let x = 0; x < constructionArray.length; x++)
+                    {
+                        for (let y = 0; y < constructionArray[0].length; y++)
+                        {
+                            if (constructionArray[y][x] == 1 && this.controller.level > 3)
+                                new RoomPosition(flag.pos.x + x, (flag.pos.y + y) - constructionArray[0].length + 1, flag.room.name).createConstructionSite(STRUCTURE_ROAD);
+                            else if (constructionArray[y][x] == 2)
+                                new RoomPosition(flag.pos.x + x, (flag.pos.y + y) - constructionArray[0].length + 1, flag.room.name).createConstructionSite(STRUCTURE_EXTENSION); 
+                        }
+                    }
+                }
+            }
+        }
     }
 
     Room.prototype.initializeMemory = function(spawnArray)

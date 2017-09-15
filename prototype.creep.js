@@ -226,7 +226,7 @@ module.exports = function(room){
         let room = this.getMyRoom(), spawn = this.getMySpawn();
         let min = room.memory.creepMinimum, count = room.memory.creepCount;
 
-        if (!room.memory.spawn || this.memory.role == 'Upgrader' || this.memory.role == 'Attacker' || this.memory.role == 'Transport') return false;
+        if (!room.memory.spawn || (this.memory.role == 'Upgrader' && room.controller.level > 4)|| this.memory.role == 'Attacker' || this.memory.role == 'Transport') return false;
 
         if (min[this.memory.role] < count[this.memory.role]) return true;
         else return false;
