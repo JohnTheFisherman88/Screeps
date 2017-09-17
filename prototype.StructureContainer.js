@@ -1,9 +1,8 @@
 module.exports = function(){
 
-	const memory = Memory.logisticalStats.allContainers;
-
 	StructureContainer.prototype.getWeightedEnergy = function()
 	{
+		var memory = Memory.logisticalStats.allContainers;
 		let energy = this.store[this.getCarryType()];
 
 		if (!memory[this.id]) return -2000;
@@ -16,12 +15,16 @@ module.exports = function(){
 
 	StructureContainer.prototype.assign = function()
 	{
+		var memory = Memory.logisticalStats.allContainers;
+
 		if (memory[this.id])
 			memory[this.id].numAssigned++;
 	}
 
 	StructureContainer.prototype.unassign = function()
 	{
+		var memory = Memory.logisticalStats.allContainers;
+		
 		if (memory[this.id])
 			memory[this.id].numAssigned = 0;
 	}

@@ -53,12 +53,11 @@ module.exports = class Manager
 
             for (let k in roomContainers)
             {
-                if (this.memory.allContainers[roomContainers[k].id] != undefined)
-                    return;
-                else
+                if (this.memory.allContainers[roomContainers[k].id] == undefined)
+                {
                     this.memory.allContainers[roomContainers[k].id] = new Object();
-
-                this.memory.allContainers[roomContainers[k].id].numAssigned = 0;
+                    this.memory.allContainers[roomContainers[k].id].numAssigned = 0;
+                }
             }
         }
     }
@@ -164,7 +163,7 @@ module.exports = class Manager
             //Skip if we don't own the controller and it either isn't reserved, or is reserved by someone who isnt me
             if (!room.controller.my)
             {
-                if (room.controller.owner != "JohnTheFisherman")
+                if (room.controller.owner && room.controller.owner != "JohnTheFisherman")
                     continue;
 
                 if (!room.controller.reservation || room.controller.reservation.username != "JohnTheFisherman")
@@ -195,7 +194,7 @@ module.exports = class Manager
                 }
                 Memory.empire.invasionRooms[room.name] = parts;
 
-                if (enemy[i].owner.username != 'Invader')
+                if (enemy[i].owner && enemy[i].owner.username != 'Invader')
                 {
                     room.controller.activateSafeMode();
                 }

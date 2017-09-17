@@ -67,27 +67,23 @@ module.exports = {
         
         if (creep.memory.invFull == false)
         {
-            if (room.controller.level <= 2 && Object.keys(room.memory.myContainers).length < 2)
+            if (isMinerMultiTool(room))
             {
                 if (!creep.memory.mySource)
                 {
-                    let sources = room.find(FIND_SOURCES);
-                    
-                    for (let i in sources)
-                    {
-                        if (sources[i].pos.findInRange(FIND_MY_CREEPS, 1).length < 4)
-                        {
-                            creep.memory.mySource = sources[i].id;
-                            break;
-                        }
-                    }
+                    let source = creep.pos.findClosestByPath(FIND_SOURCES);
+
+                    if (source)
+                        creep.memory.mySource = source.id;
+                    else
+                        return;
                 }
                 
                 let source = Game.getObjectById(creep.memory.mySource);
                     
                 if (creep.harvest(source) == ERR_NOT_IN_RANGE)
                 {
-                    if (creep.moveTo(source) == ERR_NO_PATH)
+                    if (creep.moveTo(source) != OK)
                         creep.memory.mySource = null;
                 }
                 
@@ -99,7 +95,7 @@ module.exports = {
 
             creep.doHarvestTask();
         }
-    }
+    },
 };
 
 Creep.prototype.getHarvestTask = function()
@@ -200,10 +196,10 @@ Creep.prototype.doWork = function(structures)
     let construction = null;
     let room = Game.rooms[creep.memory.myRoom.name];
     
-    if (room.controller.level <= 2 && Object.keys(room.memory.myContainers).length < 2)
+    if (isMinerMultiTool(room))
     {
         structures = [];
-        construction = this.pos.findClosestByPath(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_EXTENSION});
+        construction = this.pos.findClosestByPath(FIND_CONSTRUCTION_SITES, {filter : (s) => s.structureType == STRUCTURE_EXTENSION || s.structureType == STRUCTURE_SPAWN});
     }
 
     if (structures.length == 0)
@@ -258,4 +254,11 @@ Creep.prototype.doWork = function(structures)
     }
 
     return false;
+};
+
+var isMinerMultiTool = function(room)
+{
+    return room.controller.level <= 2 && Object.keys(room.memory.myContainers).length < 2 && !(room.memory.helperRoom != null && room.memory.spawn != null);
 }
+
+exports.isMinerMultiTool = isMinerMultiTool;

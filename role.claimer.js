@@ -25,7 +25,10 @@ Creep.prototype.getClaimTask = function()
 		}
 
 		if (flag.secondaryColor == COLOR_WHITE && this.ticksToLive < 450)
+		{
+			this.suicide();
 			continue;
+		}
 
 		if (flag.memory.closestRoom != room.name)
 		{

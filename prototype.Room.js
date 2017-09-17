@@ -6,14 +6,17 @@ module.exports = function(){
     {
         let spawnArray = this.find(FIND_MY_SPAWNS);
 
+        //Room not controlled by me
         if (!this.controller || !this.controller.my)
             return;
 
+        //Memory not initialized
         if (!this.memory.creepMinimum && this.controller.my)
         {
             this.initializeMemory(spawnArray);
         }
 
+        //Spawn destroyed
         if ((!this.memory.spawn || !Game.getObjectById(this.memory.spawn)))
         {   
             if (spawnArray.length > 0)
@@ -40,7 +43,7 @@ module.exports = function(){
                     this.memory.helperRoom = ret.room.name;
             }
         }
-        else
+        else if (this.controller.level >= 4) //Once helper room is assigned, do not remove until level 4 or greater
             delete this.memory.helperRoom;
 
         let min = this.memory.creepMinimum;
@@ -50,7 +53,10 @@ module.exports = function(){
         if (!min || !max || !count) return;
 
         if (this.memory.helperRoom)
-            this.askForHelp(min, count);
+        {
+            this.askForHelp(spawn, count);
+            return;
+        }
 
         this.setCreepMinimums(min, max, Object.keys(spawnArray).length);
         this.setCreepCount(count);
@@ -72,7 +78,7 @@ module.exports = function(){
         }
 
         //Set minBuilder
-        if (this.memory.nearbyConstruction)
+        if (this.memory.nearbyConstruction && min.Transport > 0)
         {
             if (this.memory.nearbyImportantConstruction)
                 min.Builder = 3;
@@ -82,17 +88,11 @@ module.exports = function(){
         else
             min.Builder = 0;
 
-        //Set minDefender
-        if (this.memory.nearbyInvader)
-            min.Defender = Math.ceil(_.max(this.memory.nearbyInvasionRooms)/30);
-        else
-            min.Defender = 0;
-
         //Set minWaller
         if (this.find(FIND_STRUCTURES, {filter : (s) => s.structureType == STRUCTURE_WALL}).length > 0 && this.controller.level > 3)
             min.Waller = 1;
 
-        min.Miner = (Object.keys(this.memory.myContainers).length >= 2) ? Object.keys(this.memory.mySources).length : Object.keys(this.memory.mySources).length*4;
+        min.Miner = (Object.keys(this.memory.myContainers).length >= 2) ? Object.keys(this.memory.mySources).length : Object.keys(this.memory.mySources).length*3;
         min.Claimer = (Object.keys(this.memory.myFlags)).length;
         min.Transport = Object.keys(this.memory.myContainers).length * TRANSPORT_FACTOR[this.controller.level-1];
         
@@ -167,6 +167,12 @@ module.exports = function(){
         {
             min.Attacker = 0;
         }
+
+        //Set minDefender
+        if (this.memory.nearbyInvader)
+            min.Defender = Math.ceil(_.max(this.memory.nearbyInvasionRooms)/30);
+        else
+            min.Defender = 0;
 
         //Set minExtractors
         min.Extractor = 0;
@@ -353,6 +359,8 @@ module.exports = function(){
 
     Room.prototype.createRoadsToSources = function()
     {
+        let toController = true;
+
         if (Game.constructionSites >= 80) return;
 
         //Wait for 2 containers to go up before building roads
@@ -372,7 +380,21 @@ module.exports = function(){
                 { 
                     if (structure.structureType != STRUCTURE_RAMPART && structure.structureType != STRUCTURE_SPAWN)
                     {
-                        costs.set(structure.pos.x, structure.pos.y, 255);
+                        if (structure.structureType == STRUCTURE_EXTENSION)
+                        {
+                            for (let i = -1; i < 2; i++)
+                            {
+                                for (let k = -1; k < 2; k++)
+                                {
+                                    let newX = (structure.pos.x) + i;
+                                    let newY = (structure.pos.y) + k;
+                                    
+                                    costs.set(newX, newY, 255);
+                                }
+                            }
+                        }
+                        else
+                            costs.set(structure.pos.x, structure.pos.y, 255);
                     }   
 
                     if (structure.structureType == STRUCTURE_ROAD)
@@ -385,7 +407,21 @@ module.exports = function(){
                 { 
                     if (site.structureType != STRUCTURE_CONTAINER && site.structureType != STRUCTURE_RAMPART)
                     {
-                        costs.set(site.pos.x, site.pos.y, 255);
+                        if (structure.structureType == STRUCTURE_EXTENSION)
+                        {
+                            for (let i = -1; i < 2; i++)
+                            {
+                                for (let k = -1; k < 2; k++)
+                                {
+                                    let newX = (structure.pos.x) + i;
+                                    let newY = (structure.pos.y) + k;
+                                    
+                                    costs.set(newX, newY, 255);
+                                }
+                            }
+                        }
+                        else
+                            costs.set(structure.pos.x, structure.pos.y, 255);
                     }
 
                     if (site.structureType == STRUCTURE_ROAD)
@@ -435,11 +471,12 @@ module.exports = function(){
         }
     }
 
-    Room.prototype.askForHelp = function(min, count)
+    Room.prototype.askForHelp = function(spawn, count)
     {
-        let helperRoom = Game.rooms[this.memory.helperRoom], spawn = null;
+        let helperRoom = Game.rooms[this.memory.helperRoom], helperSpawn = null;
 
-        if (!helperRoom) return;
+        if (!helperRoom || (helperRoom.memory.creepCount.Total < helperRoom.memory.creepMinimum.Total)) 
+            return;
 
         let spawnArray = helperRoom.find(FIND_MY_SPAWNS);
 
@@ -447,17 +484,19 @@ module.exports = function(){
         {
             if (!spawnArray[i].spawning)
             {
-                spawn = spawnArray[i];
+                helperSpawn = spawnArray[i];
                 break;
             }
         }
 
         if (!spawn) return;
 
-        if (count['Upgrader'] < min['Upgrader'])
+        count.Miner = _.sum(Game.creeps, (c) => c.memory.role == 'Miner' && c.memory.myRoom.name == this.name);
+
+        if (count['Miner'] < 3)
+            helperSpawn.makeCreep('Miner', this);
+        else if (count['Upgrader' < 1])
             spawn.makeCreep('Upgrader', this);
-        else if (count['Builder'] < min['Builder'])
-            spawn.makeCreep('Builder', this);
     }
 
     //Place initial flag at aboslute top left of selection
@@ -472,16 +511,34 @@ module.exports = function(){
 
             if (flag.color == COLOR_YELLOW)
             {
-                if (flag.secondaryColor == COLOR_YELLOW)
+                if (false)
                 {
                     constructionArray = [
-                    [0,0,0,0,2,0,0],
-                    [0,0,0,2,2,1,0],
-                    [0,0,2,2,1,2,2],
-                    [0,2,2,1,2,2,0],
-                    [2,2,1,2,2,0,0],
-                    [2,1,2,2,0,0,0],
-                    [1,2,2,0,0,0,0],
+                    [1,5,5,0,4,4,0],
+                    [5,1,5,4,4,1,4],
+                    [5,5,1,4,1,4,4],
+                    [0,2,2,1,4,4,0],
+                    [2,2,1,3,1,5,6],
+                    [2,1,3,3,5,1,6],
+                    [1,3,3,0,5,5,1],
+                    ]
+                }
+                if (flag.secondaryColor == COLOR_YELLOW || flag.secondaryColor == COLOR_BLUE) //20
+                {
+                    if (flag.secondaryColor == COLOR_BLUE)
+                        var mirror = true;
+
+                    constructionArray = [
+                    [0,0,0,0,1],
+                    [0,0,0,1,2],
+                    [0,0,1,2,2],
+                    [0,1,2,2,2],
+                    [1,2,2,2,2],
+                    [2,2,2,2,1],
+                    [2,2,2,1,0],
+                    [2,2,1,0,0],
+                    [2,1,0,0,0],
+                    [1,0,0,0,0]
                     ]
                 }
                 else if (flag.secondaryColor == COLOR_WHITE)
@@ -502,15 +559,29 @@ module.exports = function(){
                 
                 if (constructionArray != null)
                 {
-                    //Since (y,x) starts in the top right corner of the matrix, we adjust the y variable to start at the bottom left corner
-                    for (let x = 0; x < constructionArray.length; x++)
+                    //Note: array is actually of form [y][x], in which first dimension is vertical and second is horizontal
+                    for (let y = (constructionArray.length - 1); y >= 0; y--)
                     {
-                        for (let y = 0; y < constructionArray[0].length; y++)
+                        for (let x = 0; x < constructionArray[0].length; x++)
                         {
-                            if (constructionArray[y][x] == 1 && this.controller.level > 3)
-                                new RoomPosition(flag.pos.x + x, (flag.pos.y + y) - constructionArray[0].length + 1, flag.room.name).createConstructionSite(STRUCTURE_ROAD);
-                            else if (constructionArray[y][x] == 2)
-                                new RoomPosition(flag.pos.x + x, (flag.pos.y + y) - constructionArray[0].length + 1, flag.room.name).createConstructionSite(STRUCTURE_EXTENSION); 
+                            let startY = (flag.pos.y - (constructionArray.length - 1));
+                            let index = constructionArray[y][x];
+                            let level = this.controller.level;
+
+                            if (index == 1 && level > 3)
+                            {
+                                if (mirror)
+                                    new RoomPosition(flag.pos.x - x, (startY + y), flag.room.name).createConstructionSite(STRUCTURE_ROAD);  
+                                else
+                                    new RoomPosition(flag.pos.x + x, (startY + y), flag.room.name).createConstructionSite(STRUCTURE_ROAD);
+                            }
+                            else if (index == 2 || (index == 3 && level >= 3) || (index == 4 && level >= 4) || (index == 5 && level >= 5))
+                            {
+                                if (mirror)
+                                    new RoomPosition(flag.pos.x - x, (startY + y), flag.room.name).createConstructionSite(STRUCTURE_EXTENSION); 
+                                else
+                                    new RoomPosition(flag.pos.x + x, (startY + y), flag.room.name).createConstructionSite(STRUCTURE_EXTENSION); 
+                            }
                         }
                     }
                 }
